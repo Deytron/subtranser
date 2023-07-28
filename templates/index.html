@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Subtranser</title>
+  </head>
+  <body>
+    <h1>Select files to translate</h1>
+    <form method="post" enctype="multipart/form-data">
+      <input type="file" name="file" multiple />
+      <input type="submit" value="Upload" />
+    </form>
+    <!-- <h1>Options</h1> -->
+    <h1>Files in queue</h1>
+    <ul>
+      {% for file in inqueue %}
+      <li>{{ file }}</li>
+      {% endfor %}
+    </ul>
+    <form action="/result" method="post">
+      <label for="tg_lang">Target language:</label>
+      <select name="tg_lang" id="tg_lang">
+        {% for lang in target_lang %}
+        <option value="{{ lang['lang'] }}"">
+          {{ lang['display'] }}
+        </option>
+        {% endfor %}
+      </select>
+      <button type="submit">Run translation</button>
+    </form>
+  </body>
+</html>
