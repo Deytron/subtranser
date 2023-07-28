@@ -1,18 +1,12 @@
 import os
 import requests
-from dotenv import load_dotenv
-from fese import FFprobeVideoContainer
 
-# Get Dotenv configuration
-load_dotenv()
+# from fese import FFprobeVideoContainer
+from flask import Flask
 
-BACK = os.getenv("SUB_BACKEND")
-HOST = os.getenv("SUB_HOST")
-TG = os.getenv("SUB_TARGET_LANGUAGE")
-PATH = os.getenv("SUB_PATH")
+# Flask simple config
+app = Flask("app")
 
-# Other variables
-API_URL = f'http://{HOST}:24080/translate'
 
 def process_path(path):
     if not os.path.exists(path):
@@ -32,6 +26,7 @@ def process_path(path):
     else:
         print(f"Error: '{path}' is neither a file nor a folder.")
 
+
 def check_format(is_file):
     _, extension = os.path.splitext(is_file)
     ext = extension[1:]
@@ -41,6 +36,7 @@ def check_format(is_file):
         print(is_file)
         os.system(f"ffmpeg -i {is_file} | grep Subtitle:")
 
+
 def send_to_api(text):
     params = {"target_lang": TG, "text": text}
     response = requests.get(API_URL, params=params)
@@ -49,5 +45,27 @@ def send_to_api(text):
     else:
         return None
 
+
+@app.route("/", methods=["GET", "POST"])
+def run():
+    if requests.method == "POST":
+        # Check if the 'file' field is present in the request
+        if "file" not in requests.files:
+            return "No file part in the request."
+
+        file = requests.files["file"]
+
+        # Check if the user selected a file
+        if file.filename == "":
+            return "No file selected."
+
+        # Save the uploaded file (you can change the upload folder)
+        file.save("uploaded_file.txt")
+        return "File uploaded successfully."
+
+    return render_template("index.html")
+
+
 if __name__ == "__main__":
-    process_path(PATH)
+    app.run(host="0.0.0.0", port=8080)
+    # process_path(PATH)
