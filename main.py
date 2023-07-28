@@ -1,67 +1,43 @@
 import os
 import requests
+from werkzeug.utils import secure_filename
 
 # from fese import FFprobeVideoContainer
-from flask import Flask
+from flask import Flask, render_template, flash, request, redirect, url_for
+
+# Variables
+UPLOAD_FOLDER = "/uploaded_files"
+ALLOWED_EXTENSIONS = {"txt", "ass", "srt"}
 
 # Flask simple config
-app = Flask("app")
+app = Flask("Subtranser")
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 
-def process_path(path):
-    if not os.path.exists(path):
-        print(f"Error: Path '{path}' does not exist.")
-        return
-
-    # If path is a file
-    if os.path.isfile(path):
-        formatted = check_format(path)
-        send_to_api(formatted)
-    elif os.path.isdir(path):
-        for root, _, files in os.walk(path):
-            for file in files:
-                file_path = os.path.join(root, file)
-                check_format(file_path)
-                # send_to_api(file_path)
-    else:
-        print(f"Error: '{path}' is neither a file nor a folder.")
-
-
-def check_format(is_file):
-    _, extension = os.path.splitext(is_file)
-    ext = extension[1:]
-    if ext == "mkv":
-        subname = is_file[:-4]
-        print("file is mkv")
-        print(is_file)
-        os.system(f"ffmpeg -i {is_file} | grep Subtitle:")
-
-
-def send_to_api(text):
-    params = {"target_lang": TG, "text": text}
-    response = requests.get(API_URL, params=params)
-    if response.status_code == 200:
-        return response.text
-    else:
-        return None
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 @app.route("/", methods=["GET", "POST"])
 def run():
-    if requests.method == "POST":
+    if request.method == "POST":
         # Check if the 'file' field is present in the request
-        if "file" not in requests.files:
-            return "No file part in the request."
+        if "file" not in request.files:
+            flash("No file part")
+            return redirect(request.url)
 
-        file = requests.files["file"]
+        file = request.files["file"]
 
         # Check if the user selected a file
         if file.filename == "":
-            return "No file selected."
+            flash("No selected file")
+            return redirect(request.url)
 
         # Save the uploaded file (you can change the upload folder)
-        file.save("uploaded_file.txt")
-        return "File uploaded successfully."
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            return redirect("/", code=302)
 
     return render_template("index.html")
 
